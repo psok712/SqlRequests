@@ -155,8 +155,12 @@ A: Например, есть задача с id=10 и parent_task_id=9, зад�
 
 ### Скрипты миграций
 ```sql
-alter table tasks
- add column root_task_id bigint not null default 0;
+alter table tasks 
+ add column root_task_id bigint null;
+
+ alter table tasks 
+alter column root_task_id 
+         set default 0;
 
 with recursive tasks_tree
                    as (select t.id as root_task_id

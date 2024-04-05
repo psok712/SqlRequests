@@ -177,6 +177,12 @@ update tasks
    set root_task_id = tt.root_task_id
   from tasks_tree tt
  where tasks.id = tt.id;
+
+ alter table tasks
+alter column root_task_id set not null;
+
+ alter table tasks
+alter column root_task_id drop default;
 ```
 
 ### Запрос выборки

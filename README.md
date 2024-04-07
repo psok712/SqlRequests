@@ -46,15 +46,15 @@
                                    where status = 3 /* InProgress */
                                    group by task_id)
 
-select task.number                                                           as task_number
-     , task.title                                                            as task_title
-     , ts.name                                                               as status_name
-     , author.email                                                          as author_email
-     , assignee.email                                                        as assignee_email
-     , to_char(task.created_at, 'dd.MM.yyyy HH24:mi:ss')                     as created_at
-     , to_char(first_progress_task.min_at, 'dd.MM.yyyy HH24:mi:ss')          as in_progress_at
-     , to_char(task.completed_at, 'dd.MM.yyyy HH24:mi:ss')                   as completed_at
-     , to_char(task.completed_at - task.created_at, 'dd.MM.yyyy HH24:mi:ss') as at
+select task.number                                                              as task_number
+     , task.title                                                               as task_title
+     , ts.name                                                                  as status_name
+     , author.email                                                             as author_email
+     , assignee.email                                                           as assignee_email
+     , to_char(task.created_at, 'dd.MM.yyyy HH24:mi:ss')                        as created_at
+     , to_char(first_progress_task.min_at, 'dd.MM.yyyy HH24:mi:ss')             as in_progress_at
+     , to_char(task.completed_at, 'dd.MM.yyyy HH24:mi:ss')                      as completed_at
+     , to_char(task.completed_at - first_progress_task.min_at, 'dd HH24:mi:ss') as at
   from tasks task
   join task_statuses ts on ts.id = task.status
   join users author on author.id = task.created_by_user_id

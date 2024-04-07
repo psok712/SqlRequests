@@ -86,20 +86,22 @@ select task.number                                                              
                               , 1                 as level
                               , concat('/', t.id) as path
                            from tasks t
-                          where t.id = :parent_task_id
+                          where t.id = :child_task_id
+
                           union all
+
                          select t.id
                               , t.parent_task_id
                               , tt.level + 1               as level
                               , concat('/', t.id, tt.path) as path
                            from tasks t
-                           join tasks_tree tt on t.parent_task_id = tt.id)
-
-select level             as "Уровень задания"
-     , concat('/', path) as "Путь"
-  from tasks_tree
- where level = (select max(level)
-                  from tasks_tree);
+                           join tasks_tree tt on t.id = tt.parent_task_id)
+  
+  select level             as "Уровень задания"
+       , concat('/', path) as "Путь"
+    from tasks_tree
+   where level = (select max(level)
+                    from tasks_tree);
 ```
 
 ## Задание 3 (на 10ку): Денормализация

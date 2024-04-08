@@ -54,7 +54,7 @@ select task.number                                                              
      , to_char(task.created_at, 'dd.MM.yyyy HH24:mi:ss')                        as created_at
      , to_char(first_progress_task.min_at, 'dd.MM.yyyy HH24:mi:ss')             as in_progress_at
      , to_char(task.completed_at, 'dd.MM.yyyy HH24:mi:ss')                      as completed_at
-     , to_char(task.completed_at - first_progress_task.min_at, 'dd HH24:mi:ss') as at
+     , to_char(task.completed_at - first_progress_task.min_at, 'dd HH24:mi:ss') as work_duration
   from tasks task
   join task_statuses ts on ts.id = task.status
   join users author on author.id = task.created_by_user_id

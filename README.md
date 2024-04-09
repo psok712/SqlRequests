@@ -40,7 +40,29 @@
 
 ### Решение
 ```sql
-/* ЗДЕСЬ ДОЛЖНО БЫТЬ РЕШЕНИЕ */
+  with in_progress_first_task as (select task_id
+                                       , min(at) as min_at
+                                    from task_logs
+                                   where status = 3 /* InProgress */
+                                   group by task_id)
+
+select task.number                                                              as task_number
+     , task.title                                                               as task_title
+     , ts.name                                                                  as status_name
+     , author.email                                                             as author_email
+     , assignee.email                                                           as assignee_email
+     , to_char(task.created_at, 'dd.MM.yyyy HH24:mi:ss')                        as created_at
+     , to_char(first_progress_task.min_at, 'dd.MM.yyyy HH24:mi:ss')             as in_progress_at
+     , to_char(task.completed_at, 'dd.MM.yyyy HH24:mi:ss')                      as completed_at
+     , to_char(task.completed_at - first_progress_task.min_at, 'dd HH24:mi:ss') as work_duration
+  from tasks task
+  join task_statuses ts on ts.id = task.status
+  join users author on author.id = task.created_by_user_id
+  join users assignee on assignee.id = task.assigned_to_user_id
+  join in_progress_first_task first_progress_task on task.id = first_progress_task.task_id
+ where task.status in (4) /* Done */
+ order by at desc
+ limit 100;
 ```
 
 ## Задание 2: Выборка для проверки вложенности
@@ -58,7 +80,28 @@
 
 ### Решение
 ```sql
-/* ЗДЕСЬ ДОЛЖНО БЫТЬ РЕШЕНИЕ */
+  with recursive tasks_tree
+                     as (select t.id
+                              , t.parent_task_id
+                              , 1                 as level
+                              , concat('/', t.id) as path
+                           from tasks t
+                          where t.id = :child_task_id
+
+                          union all
+
+                         select t.id
+                              , t.parent_task_id
+                              , tt.level + 1               as level
+                              , concat('/', t.id, tt.path) as path
+                           from tasks t
+                           join tasks_tree tt on t.id = tt.parent_task_id)
+  
+  select level             as "Уровень задания"
+       , concat('/', path) as "Путь"
+    from tasks_tree
+   where level = (select max(level)
+                    from tasks_tree);
 ```
 
 ## Задание 3 (на 10ку): Денормализация
@@ -114,10 +157,55 @@ A: Например, есть задача с id=10 и parent_task_id=9, зад�
 
 ### Скрипты миграций
 ```sql
-/* ЗДЕСЬ ДОЛЖНО БЫТЬ РЕШЕНИЕ */
+alter table tasks 
+ add column root_task_id bigint null;
+
+ alter table tasks 
+alter column root_task_id 
+         set default 0;
+
+with recursive tasks_tree
+                   as (select t.id as root_task_id
+                            , t.id as id
+                         from tasks t
+                        where t.parent_task_id is null
+                        union all
+                       select tt.root_task_id as root_task_id
+                            , t.id
+                         from tasks t
+                         join tasks_tree tt on t.parent_task_id = tt.id)
+
+update tasks
+   set root_task_id = tt.root_task_id
+  from tasks_tree tt
+ where tasks.id = tt.id;
+
+ alter table tasks
+alter column root_task_id set not null;
+
+ alter table tasks
+alter column root_task_id drop default;
 ```
 
 ### Запрос выборки
 ```sql
-/* ЗДЕСЬ ДОЛЖНО БЫТЬ РЕШЕНИЕ */
+   select task.id                                           as task_id
+        , task.number                                       as task_number
+        , task.title                                        as task_title
+        , task.parent_task_id                               as parent_task_id
+        , task_parent.number                                as parent_task_number
+        , task_parent.title                                 as parent_task_title
+        , task_root.id                                      as root_task_id
+        , task_root.number                                  as root_task_number
+        , task_root.title                                   as root_task_title
+        , assigned_user.email                               as assigned_to_email
+        , to_char(task.created_at, 'dd.MM.yyyy HH24:mi:ss') as created_at
+     from tasks as task
+left join tasks as task_parent on task.parent_task_id = task_parent.id
+     join tasks as task_root on task.root_task_id = task_root.id
+     join users as assigned_user on task.assigned_to_user_id = assigned_user.id
+    where task.status in (3) /* InProgress */
+ order by task.created_at desc
+   offset @offset
+    limit @limit;
 ```
